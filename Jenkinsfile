@@ -27,6 +27,7 @@ pipeline{
                 script{
                     withAWS(region:"$region",credentials:'aws_creds'){
                         sh "aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${registry}"
+                        sh "kubectl get deployment vote -n vote || kubectl apply -f k8s/deployment.yaml -n vote"
                     }
                 }
             }
