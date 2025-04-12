@@ -17,7 +17,7 @@ pipeline{
         stage("Build Docker image"){
             steps{
                 script{
-                    sh "docker build . -t ${registry}/${ms}:${tag}"
+                    sh "docker build -t ${registry}/${ms}:${tag} ."
                 }
             }
         }
@@ -44,14 +44,13 @@ pipeline{
         }
 
         stage("Deploy to Dev"){
-            when{branch 'develop'}
+            when{ branch 'develop' }
             steps{
                 script{
                     withAWS(region:"$region",credentials:'aws_creds'){
                         sh "aws eks update-kubeconfig --name vote-dev --region ${region}"
-                        sh "aws eks update-kubeconfig --name vote-dev"
-                        sh "kubectl set image deploy/result result=${tag} -n vote "
-                        sh "kubectl rollout restart deploy/result -n vote"
+                        sh "kubectl set image deployment/vote vote=${registry}/${ms}:${tag} -n vote"
+                        sh "kubectl rollout restart deployment/vote -n vote"
                     }
                 }
             }
@@ -65,17 +64,17 @@ def getMsName(){
 }
 
 def getTag(){
- sh "ls -l"
- version = "1.0.0"
- print "version: ${version}"
+   sh "ls -l"
+   def version = "1.0.0"
+   print "version: ${version}"
 
- def tag = ""
-  if (env.BRANCH_NAME == "main"){
-    tag = version
-  } else if(env.BRANCH_NAME == "develop"){
-    tag = "${version}-develop"
-  } else {
-    tag = "${version}-${env.BRANCH_NAME}"
-  }
-return tag 
+   def tag = ""
+    if (env.BRANCH_NAME == "main"){
+        tag = version
+    } else if(env.BRANCH_NAME == "develop"){
+        tag = "${version}-develop"
+    } else {
+        tag = "${version}-${env.BRANCH_NAME}"
+    }
+ return tag
 }
