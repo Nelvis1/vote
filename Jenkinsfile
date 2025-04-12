@@ -1,54 +1,60 @@
-def registry= "484907489332.dkr.ecr.us-east-1.amazonaws.com/vote"
+def registry = "484907489332.dkr.ecr.us-east-1.amazonaws.com/vote"
 def tag = ""
 def ms = ""
 def region = "us-east-1"
 
-pipeline{
+pipeline {
     agent any
-    stages{
-        stage("init"){
-            steps{
-                script{
+
+    stages {
+        stage("Init") {
+            steps {
+                script {
                     tag = getTag()
                     ms = getMsName()
+                    echo "Microservice: ${ms}"
+                    echo "Tag: ${tag}"
                 }
             }
         }
-        stage("Build Docker image"){
-            steps{
-                script{
+
+        stage("Build Docker Image") {
+            steps {
+                script {
                     sh "docker build -t ${registry}/${ms}:${tag} ."
                 }
             }
         }
 
-        stage("Login to Ecr"){
-            steps{
-                script{
-                    withAWS(region:"$region",credentials:'aws_creds'){
+        stage("Login to ECR") {
+            steps {
+                script {
+                    withAWS(region: "${region}", credentials: 'aws_creds') {
                         sh "aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${registry}"
-                        sh "kubectl get deployment vote -n vote || kubectl apply -f k8s/deployment.yaml -n vote"
                     }
                 }
             }
         }
 
-        stage("Docker push"){
-            steps{
-                script{
-                    withAWS(region:"$region",credentials:'aws_creds'){
+        stage("Push Docker Image") {
+            steps {
+                script {
+                    withAWS(region: "${region}", credentials: 'aws_creds') {
                         sh "docker push ${registry}/${ms}:${tag}"
                     }
                 }
             }
         }
 
-        stage("Deploy to Dev"){
-            when{ branch 'develop' }
-            steps{
-                script{
-                    withAWS(region:"$region",credentials:'aws_creds'){
+        stage("Deploy to Dev") {
+            when {
+                branch 'develop'
+            }
+            steps {
+                script {
+                    withAWS(region: "${region}", credentials: 'aws_creds') {
                         sh "aws eks update-kubeconfig --name vote-dev --region ${region}"
+                        sh "kubectl get deployment vote -n vote || kubectl apply -f k8s/deployment.yaml -n vote"
                         sh "kubectl set image deployment/vote vote=${registry}/${ms}:${tag} -n vote"
                         sh "kubectl rollout restart deployment/vote -n vote"
                     }
@@ -58,23 +64,5 @@ pipeline{
     }
 }
 
-def getMsName(){
-    print env.JOB_NAME
-    return env.JOB_NAME.split("/")[0]
-}
-
-def getTag(){
-   sh "ls -l"
-   def version = "1.0.0"
-   print "version: ${version}"
-
-   def tag = ""
-    if (env.BRANCH_NAME == "main"){
-        tag = version
-    } else if(env.BRANCH_NAME == "develop"){
-        tag = "${version}-develop"
-    } else {
-        tag = "${version}-${env.BRANCH_NAME}"
-    }
- return tag
-}
+def getMsName() {
+    def serviceName
