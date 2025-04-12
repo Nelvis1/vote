@@ -65,4 +65,23 @@ pipeline {
 }
 
 def getMsName() {
-    def serviceName
+    def serviceName = env.JOB_NAME.split("/")[0]
+    echo "Service Name: ${serviceName}"
+    return serviceName
+}
+
+def getTag() {
+    def version = "1.0.0"
+    def tag = ""
+
+    if (env.BRANCH_NAME == "main") {
+        tag = version
+    } else if (env.BRANCH_NAME == "develop") {
+        tag = "${version}-develop"
+    } else {
+        tag = "${version}-${env.BRANCH_NAME}"
+    }
+
+    echo "Version Tag: ${tag}"
+    return tag
+}
