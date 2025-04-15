@@ -1,4 +1,4 @@
-def registry = "484907489332.dkr.ecr.us-east-1.amazonaws.com/vote"
+def registry = "484907489332.dkr.ecr.us-east-1.amazonaws.com/vote:1.0.0-develop"
 def tag = "1.0.0-develop"
 def imagename = "vote"
 def region = "us-east-1"
