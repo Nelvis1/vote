@@ -3,9 +3,6 @@ def tag = "1.0.0-develop"
 def imagename = "vote"
 def region = "us-east-1"
 
-sh "docker tag my-local-image ${registry}/${imageName}:${tag}"
-sh "docker push ${registry}/${imageName}:${tag}"
-
 pipeline {
     agent any
 
